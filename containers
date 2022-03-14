@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 mapfile -t FILES < <(find . -maxdepth 2 -type f -name 'docker-compose.y*ml' 2>/dev/null)
 mapfile -t OFF_FILES < <(find . -maxdepth 2 -type f -name 'docker-compose.y*ml.off' 2>/dev/null)
