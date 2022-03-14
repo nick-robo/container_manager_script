@@ -22,8 +22,12 @@ $ tree -L 2  /path/to/my_containers/
 
 Run the following in your container folder.
 
-```
+```bash
 $ wget "https://raw.githubusercontent.com/nick-robo/container_manager_script/master/containers"
+```
+Make it executable.
+```bash
+chmod +x containers
 ```
 
 ## Usage
