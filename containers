@@ -1,0 +1,216 @@
+#!/bin/bash
+
+mapfile -t FILES < <(find . -maxdepth 2 -type f -name 'docker-compose.y*ml' 2>/dev/null)
+mapfile -t OFF_FILES < <(find . -maxdepth 2 -type f -name 'docker-compose.y*ml.off' 2>/dev/null)
+
+
+# help
+Help() {
+    echo "
+Usage:  ./containers [command] CONTAINER_FOLDER
+   or:  ./containers [command]              (acts on all containers which are on)
+
+Available Commands:
+    help        Print this command
+    list        List all container folders by their state (on/off)
+    update      Update and run container
+    stop        Stop a running container
+    start       Start a stopped container
+    restart     Restart a running container
+    on          Change state to on 
+    off         Change state to off (will not be affected by other commands)
+    "
+}
+
+# update a container
+update_container() {
+    echo "Updating $(dirname "$1")"
+    docker-compose -f "$1" pull && docker-compose -f "$1" up -d
+}
+
+# stop a container
+stop_container() {
+    echo "Stopping $(dirname "$1")"
+    docker-compose -f "$1" down
+}
+
+# start a container
+start_container() {
+    echo "Starting $(dirname "$1")"
+    docker-compose -f "$1" up -d
+}
+
+# restart a container
+restart_container() {
+    echo "Restarting $(dirname "$1")"
+    docker-compose -f "$1" down  && docker-compose -f "$1" up -d
+}
+
+iterate() {
+    for file in "${FILES[@]}"
+    do
+        ($1 "$file")
+    done
+}
+
+find_folder() {
+    local res
+    res=$(find . -maxdepth 2 -type f -name 'docker-compose.y*ml*' 2>/dev/null | grep "/$1/")
+
+    if [ -z "$res" ];then
+        echo "Folder /$2 not fould"
+        exit 1
+    fi
+    echo "$res"
+}
+
+# if there are no args, then update containers which are on
+if [ $# -eq 0 ];then
+    iterate update_container
+    exit 0
+fi
+
+# deal with user input
+case $1 in
+    help|-h|--h|--help)
+        Help
+        ;;
+    list)
+        echo 'ON'
+        for file in "${FILES[@]}"
+        do
+            echo "  $(dirname "$file")"
+        done
+
+        echo 'OFF'
+        for file in "${OFF_FILES[@]}"
+        do
+            echo "  $(dirname "$file")"
+        done
+        ;;
+    update)
+
+        if [ $# -eq 1 ];then
+            iterate update_container
+            exit 0
+        fi
+
+        RES=$(find_folder "$2")
+
+        if [[ "$RES" = *".off"  ]]; then
+            echo "$(dirname "$RES") is off"
+            exit 1
+        fi
+
+        update_container "$RES"
+        ;;
+
+    start)
+
+        if [ $# -eq 1 ];then
+            iterate start_container
+            exit 0
+        fi
+
+        RES=$(find_folder "$2")
+
+        if [[ "$RES" = *".off"  ]]; then
+            echo "$(dirname "$RES") is off"
+            exit 1
+        fi
+
+        start_container "$RES"
+        ;;
+
+    stop)
+ 
+        if [ $# -eq 1 ];then
+            iterate stop_container
+            exit 0
+        fi
+
+        RES=$(find_folder "$2")
+
+        if [[ "$RES" = *".off"  ]]; then
+            echo "$(dirname "$RES") is off"
+            exit 1
+        fi
+
+        stop_container "$RES"
+
+        ;;
+
+    restart)
+ 
+        if [ $# -eq 1 ];then
+            iterate restart_container
+            exit 0
+        fi
+
+        RES=$(find_folder "$2")
+
+        if [[ "$RES" = *".off"  ]]; then
+            echo "$(dirname "$RES") is off"
+            exit 1
+        fi
+
+        restart_container "$RES"
+
+
+        ;;
+
+     on)
+        if [ $# -eq 1 ];then
+            echo "Folder name missing!"
+            echo "Usage ./cotainers.sh  [on | off] folder_name"
+            exit 0
+        fi
+        RES=$(find_folder "$2")
+
+        # check if it is on
+        if [[ "$RES" != *".off" ]]; then
+            echo "$RES is on"
+            exit 0
+        else
+            echo "Switching on $(dirname "$RES")"
+            # remove .off suffix
+            mv "$RES" "${RES%".off"}"
+            echo 'Would you like to pull and run container? (y/n)'
+            read -r response
+            if [[ $response = "y" ]];then
+                update_container "${RES%".off"}"
+            fi
+            exit 0
+        fi
+        ;;
+    off)
+        if [ $# -eq 1 ];then
+            echo "Folder name missing!"
+            echo "Usage ./cotainers.sh  [on | off] folder_name"
+            exit 1
+        fi
+        RES=$(find . -maxdepth 2 -type f -name 'docker-compose.y*ml*' 2>/dev/null | grep "/$2/")
+        if [ -z "$RES"  ];then
+            echo "Folder /$2 not found"
+            exit 1
+        else
+            echo "Switching off $(dirname "$RES")"
+            # check if it is off
+            if [[ "$RES" = *".off" ]];then
+                echo "$RES is already off"
+                exit 0
+            else
+                stop_container "$RES"
+                # remove .off suffix
+                mv "$RES" "$RES.off"
+                echo "$RES is off"
+            fi
+        fi
+        
+        ;;
+    *)
+        echo "Usage ./cotainers.sh ==> updates containers or one of [ update stop start restart ]"
+        exit 1
+esac
+
+exit 0
