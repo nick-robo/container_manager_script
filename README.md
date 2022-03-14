@@ -18,6 +18,13 @@ $ tree -L 2  /path/to/my_containers/
 └── fourth
     └── docker-compose.yaml
 ```
+## Get the Script 
+
+Run the following in your container folder.
+
+```
+$ wget "https://raw.githubusercontent.com/nick-robo/container_manager_script/master/containers"
+```
 
 ## Usage
 
