@@ -37,7 +37,17 @@ Available Commands:
     on          Change state to on 
     off         Change state to off (will not be affected by other commands)
 ```
+List containers by state.
 
+```bash
+$ ./containers list
+ON
+    first
+    third
+    fourth
+OFF
+    second
+```
 
 Start a container: `./containers start first`
 

@@ -7,9 +7,9 @@ mapfile -t OFF_FILES < <(find . -maxdepth 2 -type f -name 'docker-compose.y*ml.o
 # help
 Help() {
     echo "
-Usage:  ./containers [command] CONTAINER_FOLDER
-   or:  ./containers [command]              (acts on all containers which are on)
-
+Usage:  ./containers [command] FOLDER
+   or:  ./containers [command]              ([command] on all containers which are on)
+   or:  ./containers                        (update all containers which are on)
 Available Commands:
     help        Print this command
     list        List all container folders by their state (on/off)
@@ -46,6 +46,7 @@ restart_container() {
     docker-compose -f "$1" down  && docker-compose -f "$1" up -d
 }
 
+# apply command ($1) to each container which is on
 iterate() {
     for file in "${FILES[@]}"
     do
@@ -53,6 +54,7 @@ iterate() {
     done
 }
 
+# find the folder related to the user input
 find_folder() {
     local res
     res=$(find . -maxdepth 2 -type f -name 'docker-compose.y*ml*' 2>/dev/null | grep "/$1/")
